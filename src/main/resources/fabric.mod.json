@@ -1,0 +1,33 @@
+{
+    "schemaVersion": 1,
+    "id": "vitalis",
+    "version": "${version}",
+    "name": "Vitalis",
+    "description": "Health display and enchantment helper mod for Minecraft",
+    "authors": [
+        "Mort1n"
+    ],
+    "contact": {
+        "homepage": "https://github.com/Mort1n/Vitalis",
+        "sources": "https://github.com/Mort1n/Vitalis"
+    },
+    "license": "MIT",
+    "environment": "client",
+    "entrypoints": {
+        "client": [
+            "com.vitalis.VitalisClient"
+        ]
+    },
+    "mixins": [
+        "vitalis.client.mixins.json"
+    ],
+    "depends": {
+        "fabricloader": ">=0.16.0",
+        "minecraft": "26.2",
+        "java": ">=25",
+        "fabric-api": "*"
+    },
+    "suggests": {
+        "modmenu": "*"
+    }
+}

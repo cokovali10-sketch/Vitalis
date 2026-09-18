@@ -1,0 +1,15 @@
+{
+    "required": true,
+    "minVersion": "0.8",
+    "package": "com.vitalis.mixin",
+    "compatibilityLevel": "JAVA_25",
+    "mixins": [
+    ],
+    "client": [
+        "AbstractContainerScreenAccessor",
+        "EnchantmentScreenMixin"
+    ],
+    "injectors": {
+        "defaultRequire": 1
+    }
+}
