@@ -1,6 +1,7 @@
 package com.vitalis.hud;
 
 import com.vitalis.config.VitalisConfig;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -16,22 +17,22 @@ import java.util.List;
 
 public class HealthDisplayRenderer {
 
-    private static final double MAX_RENDER_DISTANCE = 24.0;
-
     public static void render(GuiGraphicsExtractor graphics) {
         Minecraft client = Minecraft.getInstance();
         if (client.level == null || client.player == null || client.getCameraEntity() == null) return;
         if (client.gui != null && client.gui.hud != null && client.gui.hud.isHidden()) return;
 
         VitalisConfig config = VitalisConfig.get();
-        if (config.healthShowOnSneak && !client.player.isShiftKeyDown()) return;
+        VitalisConfig.HealthConfig hc = config.health;
+        if (!hc.enabled) return;
+        if (hc.showOnSneak && !client.player.isShiftKeyDown()) return;
 
         Entity cameraEntity = client.getCameraEntity();
         double camX = cameraEntity.getX();
         double camY = cameraEntity.getY();
         double camZ = cameraEntity.getZ();
 
-        double d = MAX_RENDER_DISTANCE;
+        double d = hc.maxDistance;
         List<LivingEntity> entities = client.level.getEntitiesOfClass(LivingEntity.class,
                 new net.minecraft.world.phys.AABB(camX - d, camY - d, camZ - d, camX + d, camY + d, camZ + d),
                 e -> true);
@@ -39,38 +40,31 @@ public class HealthDisplayRenderer {
         for (LivingEntity entity : entities) {
             if (entity == cameraEntity) continue;
             if (entity.isRemoved()) continue;
-            if (entity.distanceTo(client.getCameraEntity()) > MAX_RENDER_DISTANCE) continue;
+            if (entity.distanceTo(cameraEntity) > hc.maxDistance) continue;
 
             boolean show = false;
-            if (entity instanceof Player && config.healthShowPlayers) show = true;
-            else if (entity instanceof Monster && config.healthShowHostile) show = true;
-            else if (entity instanceof Animal && config.healthShowAnimals) show = true;
-            else if (config.healthShowMobs) show = true;
+            if (entity instanceof Player && hc.showPlayers) show = true;
+            else if (entity instanceof Monster && hc.showHostile) show = true;
+            else if (entity instanceof Animal && hc.showAnimals) show = true;
+            else if (hc.showOthers) show = true;
 
             if (!show) continue;
 
-            renderHealthAbove(graphics, entity, client);
+            renderHealthAbove(graphics, entity, client, hc);
         }
     }
 
-    private static void renderHealthAbove(GuiGraphicsExtractor graphics, LivingEntity entity, Minecraft client) {
-        Font textRenderer = client.font;
+    private static void renderHealthAbove(GuiGraphicsExtractor graphics, LivingEntity entity, Minecraft client, VitalisConfig.HealthConfig hc) {
+        Font font = client.font;
 
         float health = entity.getHealth();
         float maxHealth = entity.getMaxHealth();
+        float absorption = entity.getAbsorptionAmount();
         int healthInt = Mth.ceil(health);
         int maxHealthInt = Mth.ceil(maxHealth);
 
-        String healthText = healthInt + "/" + maxHealthInt;
-
-        int color;
-        float ratio = health / maxHealth;
-        if (ratio > 0.6f) color = 0x55FF55;
-        else if (ratio > 0.3f) color = 0xFFFF55;
-        else color = 0xFF5555;
-
         double x = entity.getX();
-        double y = entity.getY() + entity.getEyeHeight() + 0.35;
+        double y = entity.getY() + entity.getEyeHeight() + hc.yOffset;
         double z = entity.getZ();
 
         int[] screenPos = worldToScreen(client, x, y, z);
@@ -79,13 +73,55 @@ public class HealthDisplayRenderer {
         int screenX = screenPos[0];
         int screenY = screenPos[1];
 
-        int textWidth = textRenderer.width(healthText);
-        int pad = 2;
+        float ratio = maxHealth > 0 ? health / maxHealth : 0;
+        int healthColor = getHealthColor(ratio);
 
-        graphics.fill(screenX - textWidth / 2 - pad, screenY - pad,
-                screenX + textWidth / 2 + pad, screenY + textRenderer.lineHeight + pad,
-                0x80000000);
-        graphics.text(textRenderer, healthText, screenX - textWidth / 2, screenY, color, true);
+        if (hc.showBar) {
+            renderHealthBar(graphics, font, screenX, screenY, health, maxHealth, absorption, healthColor);
+            if (hc.showNumbers) {
+                String numText = healthInt + "/" + maxHealthInt;
+                if (hc.showAbsorption && absorption > 0) {
+                    numText += "+" + Mth.ceil(absorption);
+                }
+                int textWidth = font.width(numText);
+                graphics.text(font, numText, screenX - textWidth / 2, screenY - 11, 0xFFFFFF, true);
+            }
+        } else if (hc.showNumbers) {
+            String numText = healthInt + "/" + maxHealthInt;
+            if (hc.showAbsorption && absorption > 0) {
+                numText += "+" + Mth.ceil(absorption);
+            }
+            int textWidth = font.width(numText);
+
+            graphics.fill(screenX - textWidth / 2 - 2, screenY - 2,
+                    screenX + textWidth / 2 + 2, screenY + font.lineHeight + 2, 0x80000000);
+            graphics.text(font, numText, screenX - textWidth / 2, screenY, healthColor, true);
+        }
+    }
+
+    private static void renderHealthBar(GuiGraphicsExtractor graphics, Font font, int centerX, int y, float health, float maxHealth, float absorption, int color) {
+        int barWidth = 40;
+        int barHeight = 4;
+        int barX = centerX - barWidth / 2;
+        int barY = y;
+
+        graphics.fill(barX - 1, barY - 1, barX + barWidth + 1, barY + barHeight + 1, 0xA0000000);
+
+        float ratio = maxHealth > 0 ? Math.min(health / maxHealth, 1.0f) : 0;
+        int filled = (int) (ratio * barWidth);
+        graphics.fill(barX, barY, barX + filled, barY + barHeight, color);
+
+        if (absorption > 0 && maxHealth > 0) {
+            float absRatio = Math.min(absorption / maxHealth, 1.0f - ratio);
+            int absFilled = (int) (absRatio * barWidth);
+            graphics.fill(barX + filled, barY, barX + filled + absFilled, barY + barHeight, 0xFFFF55);
+        }
+    }
+
+    private static int getHealthColor(float ratio) {
+        if (ratio > 0.6f) return 0x55FF55;
+        if (ratio > 0.3f) return 0xFFFF55;
+        return 0xFF5555;
     }
 
     private static int[] worldToScreen(Minecraft client, double wx, double wy, double wz) {

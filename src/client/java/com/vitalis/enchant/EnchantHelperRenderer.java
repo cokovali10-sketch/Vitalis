@@ -2,6 +2,7 @@ package com.vitalis.enchant;
 
 import com.vitalis.config.VitalisConfig;
 import com.vitalis.mixin.AbstractContainerScreenAccessor;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -13,6 +14,7 @@ import net.minecraft.world.inventory.EnchantmentMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.core.Registry;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -112,49 +114,79 @@ public class EnchantHelperRenderer {
 
     public static void renderEnchantInfo(GuiGraphicsExtractor graphics, EnchantmentScreen screen, int mouseX, int mouseY) {
         VitalisConfig config = VitalisConfig.get();
-        if (!config.enchantHelperEnabled) return;
+        if (!config.enchant.enabled) return;
         if (cachedEnchants == null || cachedEnchants.isEmpty()) return;
 
         Minecraft client = Minecraft.getInstance();
-        Font textRenderer = client.font;
+        Font font = client.font;
 
         AbstractContainerScreenAccessor accessor = (AbstractContainerScreenAccessor) screen;
-        int x = accessor.getLeftPos() + 195;
+        int x = accessor.getLeftPos() + accessor.getImageWidth() + 4;
         int y = accessor.getTopPos() + 4;
 
-        int panelWidth = 160;
-        int lineHeight = textRenderer.lineHeight + 2;
-        int totalHeight = 10 + cachedEnchants.size() * (lineHeight + 4) + 6;
+        int panelWidth = 170;
+        int lineHeight = font.lineHeight + 2;
+        int enchLines = Math.min(cachedEnchants.size(), 9);
+        int totalHeight = 12 + enchLines * (lineHeight + 2) + 4;
 
-        graphics.fill(x - 2, y - 2, x + panelWidth + 2, y + totalHeight, 0xE0101010);
-        graphics.fill(x - 1, y - 1, x + panelWidth + 1, y + totalHeight - 1, 0xE0202020);
+        graphics.fill(x - 2, y - 2, x + panelWidth + 2, y + totalHeight, 0xC0101010);
+        graphics.fill(x - 1, y - 1, x + panelWidth + 1, y + totalHeight - 1, 0xE0181818);
+        graphics.fill(x - 1, y - 1, x + panelWidth + 1, y + 1, 0xFFDDAA33);
 
-        MutableComponent title = Component.literal("Enchantment Info").withStyle(net.minecraft.ChatFormatting.GOLD, net.minecraft.ChatFormatting.BOLD);
-        graphics.text(textRenderer, title, x + 2, y + 2, 0xFFFFFF, true);
-        y += 10;
+        MutableComponent title = Component.literal("\u2728 Enchantments").withStyle(ChatFormatting.BOLD);
+        graphics.text(font, title, x + 3, y + 2, 0xFFFFFF, true);
+        y += 12;
 
+        float bestChance = 0;
         for (EnchantInfo info : cachedEnchants) {
+            if (info.chance > bestChance) bestChance = info.chance;
+        }
+
+        for (int idx = 0; idx < enchLines; idx++) {
+            EnchantInfo info = cachedEnchants.get(idx);
             String enchName = info.enchantment.description().getString();
-            MutableComponent name = Component.literal(enchName + " ").withStyle(net.minecraft.ChatFormatting.AQUA);
+            int level = info.level;
 
-            String chanceText = String.format("%.0f%%", info.chance * 100);
-            net.minecraft.ChatFormatting chanceColor;
-            if (info.chance >= 0.8f) chanceColor = net.minecraft.ChatFormatting.GREEN;
-            else if (info.chance >= 0.5f) chanceColor = net.minecraft.ChatFormatting.YELLOW;
-            else chanceColor = net.minecraft.ChatFormatting.RED;
+            String levelRoman = toRoman(level);
+            String line = enchName + " " + levelRoman;
 
-            name.append(Component.literal(chanceText).withStyle(chanceColor));
+            int chancePct = (int) (info.chance * 100);
+            String chanceStr = chancePct + "%";
 
-            int indent = info.slot * 4;
-            graphics.text(textRenderer, name, x + 4 + indent, y, 0xFFFFFF, true);
+            int indent = info.slot * 3;
 
-            if (config.enchantShowApplied) {
-                MutableComponent levelText = Component.literal("  Lv." + info.level).withStyle(net.minecraft.ChatFormatting.GRAY);
-                graphics.text(textRenderer, levelText, x + 4 + indent + textRenderer.width(name), y, 0xAAAAAA, true);
+            int nameColor;
+            if (config.enchant.highlightBest && info.chance == bestChance) {
+                nameColor = 0xFFDD33;
+            } else {
+                nameColor = 0x55FFFF;
             }
 
-            y += lineHeight + 2;
+            graphics.text(font, line, x + 4 + indent, y, nameColor, true);
+
+            int chanceColor;
+            if (info.chance >= 0.8f) chanceColor = 0x55FF55;
+            else if (info.chance >= 0.5f) chanceColor = 0xFFFF55;
+            else chanceColor = 0xFF5555;
+
+            if (config.enchant.showChances) {
+                int lineEnd = x + 4 + indent + font.width(line) + 4;
+                graphics.text(font, chanceStr, lineEnd, y, chanceColor, true);
+            }
+
+            y += lineHeight;
         }
+    }
+
+    private static String toRoman(int num) {
+        return switch (num) {
+            case 1 -> "I";
+            case 2 -> "II";
+            case 3 -> "III";
+            case 4 -> "IV";
+            case 5 -> "V";
+            default -> String.valueOf(num);
+        };
     }
 
     private static class EnchantInfo {

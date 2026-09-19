@@ -3,16 +3,17 @@
     "id": "vitalis",
     "version": "${version}",
     "name": "Vitalis",
-    "description": "Health display and enchantment helper mod for Minecraft",
+    "description": "Client HUD mod: health bars, enchantment helper, target info, armor durability, potion timers, compact overlay",
     "authors": [
         "Mort1n"
     ],
     "contact": {
-        "homepage": "https://github.com/Mort1n/Vitalis",
-        "sources": "https://github.com/Mort1n/Vitalis"
+        "homepage": "https://github.com/cokovali10-sketch/Vitalis",
+        "sources": "https://github.com/cokovali10-sketch/Vitalis"
     },
     "license": "MIT",
     "environment": "client",
+    "icon": "assets/vitalis/icon.png",
     "entrypoints": {
         "client": [
             "com.vitalis.VitalisClient"
