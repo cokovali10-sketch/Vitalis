@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(EnchantmentScreen.class)
 public class EnchantmentScreenMixin {
-    @Inject(method = "render", at = @At("TAIL"))
+    @Inject(method = "extractRenderState", at = @At("TAIL"))
     private void vitalisRenderEnchantInfo(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta, CallbackInfo ci) {
         EnchantmentScreen self = (EnchantmentScreen) (Object) this;
         EnchantHelperRenderer.renderEnchantInfo(graphics, self, mouseX, mouseY);
