@@ -67,6 +67,6 @@ public class VitalisClient implements ClientModInitializer {
             }
         });
 
-        System.out.println("[Vitalis] Mod initialized successfully! v1.1.0");
+        System.out.println("[Vitalis] Mod initialized! v1.2.0 - ModMenu integration");
     }
 }

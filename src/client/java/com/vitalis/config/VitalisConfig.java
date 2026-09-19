@@ -30,8 +30,7 @@ public class VitalisConfig {
         public boolean showAnimals = true;
         public boolean showOthers = true;
         public boolean showOnSneak = false;
-        public boolean showBar = true;
-        public boolean showNumbers = true;
+        public int displayMode = 0;
         public boolean showAbsorption = true;
         public int maxDistance = 24;
         public float yOffset = 0.35f;
