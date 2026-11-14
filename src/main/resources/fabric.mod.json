@@ -17,9 +17,6 @@
     "entrypoints": {
         "client": [
             "com.vitalis.VitalisClient"
-        ],
-        "modmenu": [
-            "com.vitalis.VitalisModMenu"
         ]
     },
     "mixins": [
